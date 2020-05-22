@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">GoodFellow</string>
+    <string name="deconnexion">Deconnexion</string>
+    <string name="support">Support</string>
+    <string name="option">Option</string>
+    <string name="compte">Compte</string>
+    <string name="input_placeholder">Ecrivez votre message</string>
+</resources>

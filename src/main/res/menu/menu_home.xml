@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/it_compte"
+        android:title="@string/compte"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/it_options"
+        android:title="@string/option"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/it_support"
+        android:title="@string/support"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/it_decon"
+        android:title="@string/deconnexion"
+        app:showAsAction="never" />
+</menu>

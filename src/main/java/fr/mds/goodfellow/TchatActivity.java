@@ -1,0 +1,190 @@
+package fr.mds.goodfellow;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scaledrone.lib.Listener;
+import com.scaledrone.lib.Member;
+import com.scaledrone.lib.Message;
+import com.scaledrone.lib.Room;
+import com.scaledrone.lib.RoomListener;
+import com.scaledrone.lib.Scaledrone;
+
+import java.util.Random;
+
+import fr.mds.goodfellow.session.SessionManager;
+
+public class TchatActivity extends AppCompatActivity implements RoomListener {
+
+    private String channelID = "UgPGsUxTFQJMy7s1";
+    private String roomName = "observable-room";
+    private EditText editText;
+    private Scaledrone scaledrone;
+    private MessageAdapter messageAdapter;
+    private ListView messagesView;
+    private SessionManager sessionManager;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_tchat);
+
+        editText = findViewById(R.id.editText);
+
+        sessionManager = new SessionManager(this);
+
+        messageAdapter = new MessageAdapter(this);
+        messagesView = findViewById(R.id.messages_view);
+        messagesView.setAdapter(messageAdapter);
+
+        MemberData data = new MemberData(getRandomName(), getRandomColor());
+
+        scaledrone = new Scaledrone(channelID, data);
+        scaledrone.connect(new Listener() {
+            @Override
+            public void onOpen() {
+                System.out.println("Scaledrone connection open");
+                scaledrone.subscribe(roomName, TchatActivity.this);
+            }
+
+            @Override
+            public void onOpenFailure(Exception ex) {
+                System.err.println(ex);
+            }
+
+            @Override
+            public void onFailure(Exception ex) {
+                System.err.println(ex);
+            }
+
+            @Override
+            public void onClosed(String reason) {
+                System.err.println(reason);
+            }
+        });
+    }
+
+    public void sendMessage(View view) {
+        String message = editText.getText().toString();
+        if (message.length() > 0) {
+            scaledrone.publish(roomName, message);
+            editText.getText().clear();
+        }
+    }
+
+    @Override
+    public void onOpen(Room room) {
+        System.out.println("Conneted to room");
+    }
+
+    @Override
+    public void onOpenFailure(Room room, Exception ex) {
+        System.err.println(ex);
+    }
+
+    @Override
+    public void onMessage(Room room, com.scaledrone.lib.Message receivedMessage) {
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            final MemberData data = mapper.treeToValue(receivedMessage.getMember().getClientData(), MemberData.class);
+            boolean belongsToCurrentUser = receivedMessage.getClientID().equals(scaledrone.getClientID());
+            final fr.mds.goodfellow.Message message = new fr.mds.goodfellow.Message(receivedMessage.getData().asText(),data, belongsToCurrentUser);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    messageAdapter.add(message);
+                    messagesView.setSelection(messagesView.getCount() - 1);
+                }
+            });
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getRandomName() {
+        String[] adjs = {"autumn", "hidden", "bitter", "misty", "silent", "empty", "dry", "dark", "summer", "icy", "delicate", "quiet", "white", "cool", "spring", "winter", "patient", "twilight", "dawn", "crimson", "wispy", "weathered", "blue", "billowing", "broken", "cold", "damp", "falling", "frosty", "green", "long", "late", "lingering", "bold", "little", "morning", "muddy", "old", "red", "rough", "still", "small", "sparkling", "throbbing", "shy", "wandering", "withered", "wild", "black", "young", "holy", "solitary", "fragrant", "aged", "snowy", "proud", "floral", "restless", "divine", "polished", "ancient", "purple", "lively", "nameless"};
+        String[] nouns = {"waterfall", "river", "breeze", "moon", "rain", "wind", "sea", "morning", "snow", "lake", "sunset", "pine", "shadow", "leaf", "dawn", "glitter", "forest", "hill", "cloud", "meadow", "sun", "glade", "bird", "brook", "butterfly", "bush", "dew", "dust", "field", "fire", "flower", "firefly", "feather", "grass", "haze", "mountain", "night", "pond", "darkness", "snowflake", "silence", "sound", "sky", "shape", "surf", "thunder", "violet", "water", "wildflower", "wave", "water", "resonance", "sun", "wood", "dream", "cherry", "tree", "fog", "frost", "voice", "paper", "frog", "smoke", "star"};
+        return (
+                adjs[(int) Math.floor(Math.random() * adjs.length)] +
+                        "_" +
+                        nouns[(int) Math.floor(Math.random() * nouns.length)]
+        );
+    }
+
+    private String getRandomColor() {
+        Random r = new Random();
+        StringBuffer sb = new StringBuffer("#");
+        while(sb.length() < 7){
+            sb.append(Integer.toHexString(r.nextInt()));
+        }
+        return sb.toString().substring(0, 7);
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_home, menu);
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.it_compte:
+                Toast.makeText(this, "WAOOO", Toast.LENGTH_SHORT).show();
+                return true;
+            case R.id.it_options:
+                Toast.makeText(this, "taooooo", Toast.LENGTH_SHORT).show();
+                return true;
+            case R.id.it_support:
+                Toast.makeText(this, "KAKASSWKAA", Toast.LENGTH_SHORT).show();
+                return true;
+            case R.id.it_decon:
+                sessionManager.logout();
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+}
+
+class MemberData {
+    private String name;
+    private String color;
+
+    public MemberData(String name, String color) {
+        this.name = name;
+        this.color = color;
+    }
+
+    public MemberData() {
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    @Override
+    public String toString() {
+        return "MemberData{" +
+                "name='" + name + '\'' +
+                ", color='" + color + '\'' +
+                '}';
+    }
+
+}
